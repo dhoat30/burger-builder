@@ -1,10 +1,11 @@
-import React, { Component } from 'react'
-import classes from './ContactData.module.css'; 
-import Button from '../../../components/UI/Button/Button'; 
-import Spinner from '../../../components/UI/Spinner/Spinner'; 
-import axios from '../../../axios-order'; 
+import React, { Component } from 'react';
+import { connect } from 'react-redux';
+
+import Button from '../../../components/UI/Button/Button';
+import Spinner from '../../../components/UI/Spinner/Spinner';
+import classes from './ContactData.module.css';
+import axios from '../../../axios-order';
 import Input from '../../../components/UI/Input/Input';
-import { element, elementType } from 'prop-types';
 
 class ContactData extends Component {
     state = {
@@ -45,7 +46,8 @@ class ContactData extends Component {
                 validation: {
                     required: true,
                     minLength: 5,
-                    maxLength: 5
+                    maxLength: 5,
+                    isNumeric: true
                 },
                 valid: false,
                 touched: false
@@ -71,7 +73,8 @@ class ContactData extends Component {
                 },
                 value: '',
                 validation: {
-                    required: true
+                    required: true,
+                    isEmail: true
                 },
                 valid: false,
                 touched: false
@@ -84,66 +87,69 @@ class ContactData extends Component {
                         {value: 'cheapest', displayValue: 'Cheapest'}
                     ]
                 },
-                validation: {}, 
-                value: 'fastest',
+                value: '',
+                validation: {},
                 valid: true
             }
         },
         formIsValid: false,
         loading: false
     }
-    orderHandler = (event) =>{
+
+    orderHandler = ( event ) => {
         event.preventDefault();
-       let formData = {}; 
-
-       for(let formIdentifier in this.state.orderForm){
-           formData[formIdentifier] = this.state.orderForm[formIdentifier].value;
-       }
-        this.setState({
-            loader: true
-        })
+        this.setState( { loading: true } );
+        const formData = {};
+        for (let formElementIdentifier in this.state.orderForm) {
+            formData[formElementIdentifier] = this.state.orderForm[formElementIdentifier].value;
+        }
         const order = {
-            ingredients: this.props.ingredients, 
-            price: this.props.price, 
-            formData
-            
-        };
-
-        axios.post('/order.json', order)
-        .then((response)=> {
-            console.log('added to database')
-            this.setState({
-                loader: false, 
-                purchasing: false
-            })
-            this.props.history.push('/');
-        })
-        .catch((error)=> {
-            this.setState({
-                loader: false, 
-                purchasing: false
-            })
-        });
+            ingredients: this.props.ings,
+            price: this.props.price,
+            orderData: formData
+        }
+        axios.post( '/orders.json', order )
+            .then( response => {
+                this.setState( { loading: false } );
+                this.props.history.push( '/' );
+            } )
+            .catch( error => {
+                this.setState( { loading: false } );
+            } );
     }
 
-    checkValidity =(value, rules)=>{
-        let isValid = true; 
-
+    checkValidity(value, rules) {
+        let isValid = true;
+        if (!rules) {
+            return true;
+        }
+        
         if (rules.required) {
             isValid = value.trim() !== '' && isValid;
         }
-        if(rules.maxLength){
+
+        if (rules.minLength) {
+            isValid = value.length >= rules.minLength && isValid
+        }
+
+        if (rules.maxLength) {
             isValid = value.length <= rules.maxLength && isValid
         }
-        if(rules.minLength){
-            isValid = value.length >= rules.minLength && isValid
 
+        if (rules.isEmail) {
+            const pattern = /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/;
+            isValid = pattern.test(value) && isValid
         }
-        
+
+        if (rules.isNumeric) {
+            const pattern = /^\d+$/;
+            isValid = pattern.test(value) && isValid
+        }
+
         return isValid;
     }
-    
-    inputChangeHandler = (event, inputIdentifier)=>{
+
+    inputChangedHandler = (event, inputIdentifier) => {
         const updatedOrderForm = {
             ...this.state.orderForm
         };
@@ -154,54 +160,55 @@ class ContactData extends Component {
         updatedFormElement.valid = this.checkValidity(updatedFormElement.value, updatedFormElement.validation);
         updatedFormElement.touched = true;
         updatedOrderForm[inputIdentifier] = updatedFormElement;
-        let formIsValid = true; 
-
-        for(let indentifier in updatedOrderForm){
-            formIsValid = updatedOrderForm[indentifier].valid && formIsValid; 
+        
+        let formIsValid = true;
+        for (let inputIdentifier in updatedOrderForm) {
+            formIsValid = updatedOrderForm[inputIdentifier].valid && formIsValid;
         }
         this.setState({orderForm: updatedOrderForm, formIsValid: formIsValid});
     }
-    render() {
-        let elementForm = []; 
-        let form = ''; 
-        for(let key in this.state.orderForm){
-            elementForm.push({
-                id: key, 
+
+    render () {
+        const formElementsArray = [];
+        for (let key in this.state.orderForm) {
+            formElementsArray.push({
+                id: key,
                 config: this.state.orderForm[key]
-            })
+            });
         }
-        if(this.state.loader){
-            form = <Spinner></Spinner>
+        let form = (
+            <form onSubmit={this.orderHandler}>
+                {formElementsArray.map(formElement => (
+                    <Input 
+                        key={formElement.id}
+                        elementType={formElement.config.elementType}
+                        elementConfig={formElement.config.elementConfig}
+                        value={formElement.config.value}
+                        invalid={!formElement.config.valid}
+                        shouldValidate={formElement.config.validation}
+                        touched={formElement.config.touched}
+                        changed={(event) => this.inputChangedHandler(event, formElement.id)} />
+                ))}
+                <Button btnType="Success" disabled={!this.state.formIsValid}>ORDER</Button>
+            </form>
+        );
+        if ( this.state.loading ) {
+            form = <Spinner />;
         }
-        else{
-            form =<form onSubmit= {this.orderHandler}>
-
-                {elementForm.map(ele=>{
-                    return <Input 
-                    changed={(event)=>{this.inputChangeHandler(event, ele.id)}} 
-                    elementType={ele.config.elementType} 
-                    elementConfig={ele.config.elementConfig} 
-                    value={ele.config.value} 
-                    invalidInput= {!ele.config.valid}
-                    required= {ele.config.validation}
-                    touched= {ele.config.touched}
-                    />;
-                })}
-            
-            
-            <Button disabled={!this.state.formIsValid} btnType="Success"> Order</Button>
-            </form>; 
-        }
-         
-
- 
         return (
             <div className={classes.ContactData}>
-                <h4> Enter Your Contact Details</h4>
+                <h4>Enter your Contact Data</h4>
                 {form}
             </div>
-        )
+        );
     }
 }
 
-export default ContactData;
+const mapStateToProps = state => {
+    return {
+        ings: state.ingredients,
+        price: state.totalPrice
+    }
+};
+
+export default connect(mapStateToProps)(ContactData);
