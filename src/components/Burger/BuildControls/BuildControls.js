@@ -1,37 +1,31 @@
 import React from 'react';
-import classes from './BuildControl.module.css';
-import BuildControl from './BuildControl/BuildControl'; 
-let controls = [
-    {label: 'Salad', type:'salad'},
-    {label: 'Bacon', type:'bacon'},
-    {label: 'Cheese', type:'cheese'}, 
-    {label: 'Meat', type:'meat'}
+
+import classes from './BuildControls.css';
+import BuildControl from './BuildControl/BuildControl';
+
+const controls = [
+    { label: 'Salad', type: 'salad' },
+    { label: 'Bacon', type: 'bacon' },
+    { label: 'Cheese', type: 'cheese' },
+    { label: 'Meat', type: 'meat' },
 ];
 
-const buildControls = (props) => {
-   
-    return ( 
-        <div className={classes.BuildControls}>
-            <p>Current Price:<strong>{props.price.toFixed(2)}</strong></p>
-            {
-                controls.map(cont=> (
-                    <BuildControl 
-                    key={cont.label} 
-                    label={cont.label}
-                    added = {()=> props.ingredientAdded(cont.type)}
-                    removed = {()=> props.removeIngredients(cont.type)}
-                    disabled = {props.disabled[cont.type]}
-                    ></BuildControl>
-                ))
-            }
-
-            <button 
-            disabled={!props.purchasable} 
+const buildControls = (props) => (
+    <div className={classes.BuildControls}>
+        <p>Current Price: <strong>{props.price.toFixed(2)}</strong></p>
+        {controls.map(ctrl => (
+            <BuildControl 
+                key={ctrl.label} 
+                label={ctrl.label}
+                added={() => props.ingredientAdded(ctrl.type)}
+                removed={() => props.ingredientRemoved(ctrl.type)}
+                disabled={props.disabled[ctrl.type]} />
+        ))}
+        <button 
             className={classes.OrderButton}
-            onClick={props.ordered}
-            >Order Now</button>
-        </div>
-    )
-}
+            disabled={!props.purchasable}
+            onClick={props.ordered}>ORDER NOW</button>
+    </div>
+);
 
-export default buildControls; 
+export default buildControls;
