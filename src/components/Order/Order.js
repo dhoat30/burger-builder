@@ -21,6 +21,7 @@ function Order(props) {
     })
     return (
         <div className={classes.Order}>
+            <h1> { ingredients}</h1>
             <p>Ingredients: {ingredientOutput} </p>
             <p>Price: <strong>NZD {props.price.toFixed(2)}</strong></p>
         </div>

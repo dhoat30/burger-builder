@@ -15,9 +15,11 @@ import {connect } from 'react-redux';
     }
     render() {
         let summary = <Redirect to="/" />; 
-
+        
         if(this.props.ings){
+            let purchased = this.props.purchased ? <Redirect to="/"/> : null; 
             summary = <div>
+                {purchased}
             <CheckoutSummary 
             checkoutCancelled={this.checkoutCancelledHandler}
             checkoutContinue={this.checkoutContinuedHandler}
@@ -33,7 +35,8 @@ import {connect } from 'react-redux';
 }
 const mapStateToProps = state => {
     return{
-        ings: state.burgerBuilder.ingredients
+        ings: state.burgerBuilder.ingredients, 
+        purchased: state.order.purchased 
     }
 }
 export default connect(mapStateToProps)(Checkout); 
